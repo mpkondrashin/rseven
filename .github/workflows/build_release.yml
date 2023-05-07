@@ -11,12 +11,28 @@ jobs:
         uses: actions/setup-go@v2
       - name: Check Go version
         run: go version
-      - name: Build
+      - name: Build Windows
         run: GOOS=windows GOARCH=amd64 go build
       - name: Pack release
         run: tar cfvz rseven_windows.tgz rseven.exe
+      - name: Build macOS
+        run: GOOS=darwin GOARCH=amd64 go build
+      - name: Pack release
+        run: tar cfvz rseven_macos_amd64.tgz rseven
+      - name: Build macOS Mx
+        run: GOOS=darwin GOARCH=arm64 go build
+      - name: Pack release
+        run: tar cfvz rseven_macos_arm64.tgz rseven
+      - name: Build Linux
+        run: GOOS=linux GOARCH=amd64 go build
+      - name: Pack release
+        run: tar cfvz rseven_linux.tgz rseven
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: rseven_windows.tgz
+          files: |
+            rseven_windows.tgz
+            rseven_macos_amd64.tgz
+            rseven_macos_arm64.tgz
+            rseven_linux.tgz
