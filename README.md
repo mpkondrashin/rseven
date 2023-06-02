@@ -11,4 +11,3 @@
 
 This is it. Go to SMS -> Profiles -> eVR and use evr.csv file to tune your profile.
 
-

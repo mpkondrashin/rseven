@@ -42,14 +42,20 @@ const (
 	VulnerabilityTitle
 )
 
-func Rapid7toNative(in []string) (out []string) {
+func Rapid7toNative(in []string) (out []string, err error) {
 	out = make([]string, SEVERITY+1)
 	out[PRODUCT] = "Rapid7"
 	out[IP_ADDRESS] = in[AssetIPAddress]
+	if out[IP_ADDRESS] == "" {
+		return nil, fmt.Errorf("IP address (column %d) is missing", AssetIPAddress+1)
+	}
 	out[PORT] = in[ServicePort]
 	_ = in[VulnerabilityTestResultCode]
 	out[VULNERABILITY_ID] = in[VulnerabilityID]
 	out[CVE_IDS] = in[VulnerabilityCVEIDs]
+	if out[CVE_IDS] == "" {
+		return nil, fmt.Errorf("CVE IDs (column %d) are missing", VulnerabilityCVEIDs+1)
+	}
 	out[SEVERITY] = in[VulnerabilitySeverityLevel]
 	out[VULNERABILITY_TITLE] = in[VulnerabilityTitle]
 	for i := range out {
@@ -58,13 +64,8 @@ func Rapid7toNative(in []string) (out []string) {
 	return
 }
 
-func main() {
-	if len(os.Args) != 3 {
-		fmt.Printf("RSeven: convert from Rapid7 CSV report to Tipping Point SMS native CSV format\nUsage: %s input_filename output_filename\n", os.Args[0])
-		os.Exit(1)
-	}
-
-	inFile, err := os.Open(os.Args[1])
+func ProcessFile(inFileName, outFileName string) {
+	inFile, err := os.Open(inFileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,16 +77,31 @@ func main() {
 		log.Fatal(err)
 	}
 
-	outFile, err := os.Create(os.Args[2])
+	outFile, err := os.Create(outFileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer outFile.Close()
 
 	fmt.Fprintf(outFile, "%s\n", header)
-	for _, inLine := range inData[1:] {
-		outData := Rapid7toNative(inLine)
+	for lineNumber, inLine := range inData[1:] {
+		outData, err := Rapid7toNative(inLine)
+		if err != nil {
+			log.Printf("%s[%d]: %v", inFileName, lineNumber+2, err)
+			continue
+		}
 		line := strings.Join(outData, ",")
 		fmt.Fprintf(outFile, "%s\n", line)
 	}
+
+}
+
+func main() {
+	if len(os.Args) != 3 {
+		fmt.Printf("RSeven: convert from Rapid7 CSV report to Tipping Point SMS native CSV format\nUsage: %s input_filename output_filename\n", os.Args[0])
+		os.Exit(1)
+	}
+	inFileName := os.Args[1]
+	outFileName := os.Args[2]
+	ProcessFile(inFileName, outFileName)
 }
